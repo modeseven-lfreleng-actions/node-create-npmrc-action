@@ -243,12 +243,12 @@ jobs:
 
       # Reference the action remotely (full path + SHA) rather than './'
       # so the nested 'uses: ./scrub-npmrc' resolves from the staged
-      # action directory, not the consumer workspace. Pinned to the PR
-      # HEAD; bump to a release tag once one is published.
+      # action directory, not the consumer workspace. Pinned to main
+      # (M2), which carries the full-path scrub-npmrc reference fix.
       - name: "Create .npmrc via remote action reference"
         id: remote
         # yamllint disable-line rule:line-length
-        uses: modeseven-lfreleng-actions/node-create-npmrc-action@e042a36769827dac5149d0ac0158aef7789e94a1  # feat/create-npmrc-action HEAD
+        uses: modeseven-lfreleng-actions/node-create-npmrc-action@911c66de2f6dc8072a62081982af6e7fe70677f7  # v0.1.0 + scrub fix
         with:
           nexus_host: "nexus3.example.org"
           nexus_user: "testuser"
