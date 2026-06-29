@@ -228,19 +228,10 @@ jobs:
       contents: read
     timeout-minutes: 10
     steps:
-      # yamllint disable-line rule:line-length
-      - uses: lfreleng-actions/harden-runner-block-action@42663a22f7abe31521cbc6120901353a4b2849bc  # v0.2.0
-        with:
-          config: '@18d9c4446bea555d0783e850f6d295f844fe8f67'  # v0.1.1
-
-      - name: 'Harden runner (block)'
-        # yamllint disable-line rule:line-length
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
-        with:
-          egress-policy: 'block'
-          allowed-endpoints: >
-            ${{ env.CONNECTION_ALLOW_LIST }}
-
+      # NOTE: the org egress allow-list (harden-runner-block-action) is not
+      # available in this personal fork, so the hardening steps used by the
+      # upstream workflow are omitted here. This throwaway branch exists only
+      # to prove nested-action resolution under remote consumption.
       # Reference the action remotely (full path + SHA) rather than './'
       # so the nested 'uses: ./scrub-npmrc' resolves from the staged
       # action directory, not the consumer workspace. Pinned to main
