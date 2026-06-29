@@ -211,3 +211,62 @@ jobs:
           # Failure testing is also important
           echo "Error: action succeeded without a password ❌"
           exit 1
+
+  ### Verify remote consumption resolves the nested scrub-npmrc action ###
+  # The 'tests' job above invokes the action with 'uses: ./', where the
+  # action repository is the checked-out workspace; that cannot exercise
+  # how a downstream consumer resolves the nested 'uses: ./scrub-npmrc'
+  # step. This job references the action by its full owner/repo@sha path
+  # so the runner stages it under _actions/ exactly as a remote consumer
+  # would. A green run proves the nested local reference resolves; a
+  # failure ('Can't find action.yml under .../scrub-npmrc') would confirm
+  # the relative reference is broken for remote consumption.
+  remote-consumption:
+    name: "Consume action remotely (nested scrub-npmrc)"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    steps:
+      # yamllint disable-line rule:line-length
+      - uses: lfreleng-actions/harden-runner-block-action@42663a22f7abe31521cbc6120901353a4b2849bc  # v0.2.0
+        with:
+          config: '@18d9c4446bea555d0783e850f6d295f844fe8f67'  # v0.1.1
+
+      - name: 'Harden runner (block)'
+        # yamllint disable-line rule:line-length
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411  # v2.19.4
+        with:
+          egress-policy: 'block'
+          allowed-endpoints: >
+            ${{ env.CONNECTION_ALLOW_LIST }}
+
+      # Reference the action remotely (full path + SHA) rather than './'
+      # so the nested 'uses: ./scrub-npmrc' resolves from the staged
+      # action directory, not the consumer workspace. Pinned to the PR
+      # HEAD; bump to a release tag once one is published.
+      - name: "Create .npmrc via remote action reference"
+        id: remote
+        # yamllint disable-line rule:line-length
+        uses: modeseven-lfreleng-actions/node-create-npmrc-action@e042a36769827dac5149d0ac0158aef7789e94a1  # feat/create-npmrc-action HEAD
+        with:
+          nexus_host: "nexus3.example.org"
+          nexus_user: "testuser"
+          nexus_password: "testpass"
+          path: "/tmp/npmrc-remote"
+
+      - name: "Verify remote-consumption .npmrc"
+        shell: bash
+        env:
+          NPMRC: ${{ steps.remote.outputs.npmrc_path }}
+          REG: ${{ steps.remote.outputs.registry_url }}
+        run: |
+          # A green run proves the nested ./scrub-npmrc reference resolved
+          # when the action was consumed remotely
+          set -euo pipefail
+          if [ -z "${NPMRC}" ] || [ ! -f "${NPMRC}" ]; then
+            echo "Error: remote-consumption .npmrc was not created ❌"
+            exit 1
+          fi
+          echo "Remote consumption verified: ${REG} ✅" \
+            >> "$GITHUB_STEP_SUMMARY"
